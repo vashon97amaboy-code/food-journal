@@ -63,7 +63,7 @@ function parseNutrition(text){
  }
  return r;
 }
-function detectNutritionBasis(text){const t=String(text).toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ');if(/(?:на|per|pour)\s*100\s*(?:г|g|гр|мл|ml)\b/u.test(t))return 'hundred';if(/(?:на\s*(?:1\s*)?порци[юи]|per\s*serving|serving\s*size|на\s*упаковку)/u.test(t))return 'serving';return 'unknown';}
+function detectNutritionBasis(text){const t=String(text).toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ');if(/(?:на|per|pour)\s*100\s*(?:г|g|гр|мл|ml)(?=\s|$|[.,;:)])/u.test(t))return 'hundred';if(/(?:на\s*(?:1\s*)?порци[юи]|per\s*serving|serving\s*size|на\s*упаковку)/u.test(t))return 'serving';return 'unknown';}
 function reviewLabel(text,layout){const r=layout||parseNutrition(text);for(const key of ['energy','protein','fat','carbs'])$('ocr'+key[0].toUpperCase()+key.slice(1)).value=r[key]??'';$('ocrReview').classList.remove('hidden');let proof=$('ocrEvidence');if(!proof){proof=document.createElement('p');proof.id='ocrEvidence';proof.className='muted';$('ocrReview').prepend(proof);}const names={energy:'Ккал',protein:'Белки',fat:'Жиры',carbs:'Углеводы'};proof.textContent=Object.keys(names).map(k=>names[k]+': '+(r.evidence[k]||'связь с числом не найдена')).join(' · ');const n=Object.values(r).filter(v=>v!==null).length;const basis=detectNutritionBasis(text);$('ocrStatus').textContent='Сопоставлено '+n+' из 4 значений. '+(basis==='serving'?'ВНИМАНИЕ: на фото указана порция, а не 100 г/мл. Пересчитай значения вручную перед переносом. ':basis==='unknown'?'Не удалось подтвердить, что числа даны на 100 г/мл. ':'')+'Числа без понятной подписи не подставляются. Проверь результат по этикетке.';}
 function parseNutritionLayout(data){
  const r=parseNutrition(data.text||'');
