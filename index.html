@@ -47,44 +47,41 @@ function resetFoodForm(){
  stopScanner();
 }
 
-function parseNutrition(text){
- const lines=text.toLowerCase().replace(/ё/g,'е').replace(/(\d)\s*,\s*(\d)/g,'$1.$2').split(/\n/);
- const result={energy:null,protein:null,fat:null,carbs:null};
- const labels={protein:/белк\w*|белки|белок|proteins?/,fat:/жиры?|жиров|total\s+fat|\bfat\b/,carbs:/углевод[^\s:]*|carbohydrates?|\bcarbs\b/};
- const num=s=>{const m=s.match(/(?:^|[^\d])([0-9]+(?:\.[0-9]+)?)/);return m?Number(m[1]):null;};
- for(let i=0;i<lines.length;i++){
-  const line=lines[i];
-  for(const [key,re] of Object.entries(labels)){const m=re.exec(line);if(m&&result[key]===null){const tail=line.slice(m.index+m[0].length);let v=num(tail);if(v===null&&lines[i+1]&&/^\s*\d/.test(lines[i+1]))v=num(lines[i+1]);if(v!==null&&v<=100)result[key]=v;}}
-  if(result.energy===null){const m=line.match(/(\d+(?:\.\d+)?)\s*(?:ккал|kcal)/);if(m)result.energy=Number(m[1]);else if(/калорийность|calories/.test(line)&&! /кдж|kj/.test(line)){const v=num(line.replace(/100\s*(?:г|g|мл|ml)/g,''));if(v!==null)result.energy=v;}}
- }
- if(result.energy!==null&&result.energy>950)result.energy=null;
- return result;
-}
-function reviewLabel(text,layout){const r=layout||parseNutrition(text);for(const key of ['energy','protein','fat','carbs'])$('ocr'+key[0].toUpperCase()+key.slice(1)).value=r[key]??'';$('ocrReview').classList.remove('hidden');const n=Object.values(r).filter(v=>v!==null).length;$('ocrStatus').textContent=n?'Распознано '+n+' из 4 значений. Проверь результат перед переносом. Если калории пустые, введи их с этикетки: подозрительно большие значения не подставляются.':'Не удалось выделить КБЖУ. Можно заполнить поля вручную или сделать фото ближе.';}
 
+const nutrientLabels={protein:/белки|белок|proteins?/giu,fat:/жиры|жиров|жир|total\s+fat|\bfat\b/giu,carbs:/углеводы|углеводов|carbohydrates?|\bcarbs\b/giu,energy:/ккал|kcal|калорийность|calories/giu};
+function nutritionResult(){const r={energy:null,protein:null,fat:null,carbs:null};Object.defineProperty(r,'evidence',{value:{},enumerable:false});return r;}
+function nutrientMentions(text){const out=[];for(const [key,re] of Object.entries(nutrientLabels)){re.lastIndex=0;for(const m of text.matchAll(re))out.push({key,start:m.index,end:m.index+m[0].length,label:m[0]});}return out.sort((a,b)=>a.start-b.start);}
+function recordNutrient(r,key,value,evidence){if(value<0||value>(key==='energy'?950:100)||!Number.isFinite(value))return;if(r[key]!==null&&r[key]!==value){r[key]=null;r.evidence[key]='Неоднозначные значения — проверь этикетку';return;}if(r.evidence[key]?.startsWith('Неоднозначные'))return;r[key]=value;r.evidence[key]=evidence;}
+function parseNutrition(text){
+ const r=nutritionResult();const lines=text.toLowerCase().replace(/ё/g,'е').replace(/(\d)\s*,\s*(\d)/g,'$1.$2').split(/\n/);
+ for(const line of lines){const mentions=nutrientMentions(line);
+  for(let i=0;i<mentions.length;i++){const m=mentions[i],tail=line.slice(m.end,mentions[i+1]?.start??line.length);let match;
+   if(m.key==='energy'&&/^(ккал|kcal)$/.test(m.label)){match=line.slice(0,m.start).match(/(\d+(?:\.\d+)?)\s*$/);}
+   else{match=tail.match(/^\s*[:=—–-]?\s*(\d+(?:\.\d+)?)(?:\s*(?:г|g|ккал|kcal)\b|\s|[,;.]|$)/u);}
+   if(match&&!(m.key!=='energy'&&/\d/.test(tail.slice(match[0].length))))recordNutrient(r,m.key,Number(match[1]),m.label+' → '+match[1]+' (в одной строке)');
+  }
+ }
+ return r;
+}
+function reviewLabel(text,layout){const r=layout||parseNutrition(text);for(const key of ['energy','protein','fat','carbs'])$('ocr'+key[0].toUpperCase()+key.slice(1)).value=r[key]??'';$('ocrReview').classList.remove('hidden');let proof=$('ocrEvidence');if(!proof){proof=document.createElement('p');proof.id='ocrEvidence';proof.className='muted';$('ocrReview').prepend(proof);}const names={energy:'Ккал',protein:'Белки',fat:'Жиры',carbs:'Углеводы'};proof.textContent=Object.keys(names).map(k=>names[k]+': '+(r.evidence[k]||'связь с числом не найдена')).join(' · ');const n=Object.values(r).filter(v=>v!==null).length;$('ocrStatus').textContent='Сопоставлено '+n+' из 4 значений. Числа без понятной подписи не подставляются. Проверь результат по этикетке.';}
 function parseNutritionLayout(data){
  const r=parseNutrition(data.text||'');
  const words=(data.blocks||[]).flatMap(b=>(b.paragraphs||[]).flatMap(p=>(p.lines||[]).flatMap(l=>l.words||[]))).filter(w=>w.bbox);
- const normalized=t=>t.toLowerCase().replace(/ё/g,'е');
- const labels={protein:/^бел(?:ки|ок)|^proteins?$/,fat:/^жир|^fat$/,carbs:/^углев|^carbo/,energy:/ккал|kcal/};
- for(const [key,re] of Object.entries(labels)){
-  for(const label of words.filter(w=>re.test(normalized(w.text)))){
-   const a=label.bbox,h=Math.max(8,a.y1-a.y0),cx=(a.x0+a.x1)/2;
-   const candidates=words.filter(w=>{const b=w.bbox;const x=(b.x0+b.x1)/2;return b.y0>=a.y1-h*.3&&b.y0-a.y1<8*h&&Math.abs(x-cx)<Math.max(a.x1-a.x0,3*h)*.65&&/\d/.test(w.text);}).sort((u,v)=>{const score=w=>Math.max(0,w.bbox.y0-a.y1)+Math.abs((w.bbox.x0+w.bbox.x1)/2-cx)*.5;return score(u)-score(v);});
-   for(const w of candidates){let t=w.text.replace(/,/g,'.');let m=key==='energy'?t.match(/\d+(?:\.\d+)?\s*[/|]\s*(\d+(?:\.\d+)?)/):null;
-    if(!m)m=t.match(/^(\d+(?:\.\d+)?)(?:\s*[гg]|$)/i);
-    if(!m)continue;const v=Number(m[1]);if(v>(key==='energy'?950:100))continue;
-    if(key==='energy'&&!t.includes('/')&&!t.includes('|')&&v>950)continue;
-    r[key]=v;break;
-   }
-   if(r[key]!==null)break;
-  }
+ const labels=words.flatMap(w=>nutrientMentions(w.text.toLowerCase()).map(m=>({...w,key:m.key})));
+ for(const label of labels){if(r[label.key]!==null)continue;const a=label.bbox,h=Math.max(8,a.y1-a.y0),cx=(a.x0+a.x1)/2;
+  const candidates=words.filter(w=>{const b=w.bbox,x=(b.x0+b.x1)/2; if(b.y0<a.y1-h*.15||b.y0-a.y1>5*h||Math.abs(x-cx)>Math.max(a.x1-a.x0,2*h)*.6)return false;
+   const neighbours=labels.filter(l=>Math.abs(l.bbox.y0-a.y0)<h*1.5&&l!==label);
+   return !neighbours.some(l=>Math.abs(x-(l.bbox.x0+l.bbox.x1)/2)<=Math.abs(x-cx));
+  }).map(w=>{const t=w.text.trim().replace(/,/g,'.');const pair=label.key==='energy'&&t.match(/^\d+(?:\.\d+)?\s*[/|]\s*(\d+(?:\.\d+)?)$/);const m=pair||t.match(/^(\d+(?:\.\d+)?)(?:\s*[гg])?$/i);return m?{w,value:Number(m[1])}:null;}).filter(Boolean).filter(x=>x.value<=(label.key==='energy'?950:100)).sort((u,v)=>u.w.bbox.y0-v.w.bbox.y0);
+  if(!candidates.length)continue;const first=candidates[0];const sameRow=candidates.filter(c=>Math.abs(c.w.bbox.y0-first.w.bbox.y0)<h);
+  if(sameRow.length!==1)continue;
+  recordNutrient(r,label.key,first.value,label.text+' → '+first.w.text+' (под заголовком)');
  }
  return r;
 }
 function loadOCR(){if(window.Tesseract)return Promise.resolve();return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/tesseract.js@6.0.1/dist/tesseract.min.js';script.onload=resolve;script.onerror=()=>{script.remove();reject(Error('load'));};document.head.appendChild(script);});}
 async function scanLabel(input){const file=input.files[0];input.value='';if(!file||ocrBusy)return;if(!file.type.startsWith('image/')){$('ocrStatus').textContent='Выбери фотографию в формате JPG или PNG.';return;}ocrBusy=true;const generation=ocrGeneration;document.querySelectorAll('.ocr-pick').forEach(b=>b.disabled=true);$('ocrReview').classList.add('hidden');$('ocrText').value='';if(ocrURL)URL.revokeObjectURL(ocrURL);ocrURL=URL.createObjectURL(file);$('ocrPreview').src=ocrURL;$('ocrPreview').classList.remove('hidden');$('ocrStatus').textContent='Загружаем распознаватель… При первом запуске это может занять время.';let worker;
-try{await stopScanner();const img=new Image();img.src=ocrURL;await img.decode();const canvas=document.createElement('canvas');const scale=Math.min(2,2200/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);await loadOCR();worker=await Tesseract.createWorker('rus+eng',1,{logger:m=>{if(generation===ocrGeneration&&m.status==='recognizing text')$('ocrStatus').textContent='Читаем этикетку… '+Math.round(m.progress*100)+'%';}});await worker.setParameters({tessedit_pageseg_mode:'11'});let {data}=await worker.recognize(canvas,{}, {text:true,blocks:true});let parsed=parseNutritionLayout(data);if(Object.values(parsed).filter(v=>v!==null).length<4&&generation===ocrGeneration){$('ocrStatus').textContent='Уточняем таблицу…';const c=canvas.getContext('2d');const pixels=c.getImageData(0,0,canvas.width,canvas.height);for(let i=0;i<pixels.data.length;i+=4){let g=.299*pixels.data[i]+.587*pixels.data[i+1]+.114*pixels.data[i+2];g=Math.max(0,Math.min(255,(g-128)*1.5+128));pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=g;}c.putImageData(pixels,0,0);await worker.setParameters({tessedit_pageseg_mode:'3'});const second=await worker.recognize(canvas,{}, {text:true,blocks:true});const next=parseNutritionLayout(second.data);for(const k of Object.keys(parsed))if(parsed[k]===null)parsed[k]=next[k];data.text+='\n--- Повторное распознавание ---\n'+second.data.text;}if(generation===ocrGeneration){$('ocrText').value=data.text;reviewLabel(data.text,parsed);}}catch(e){if(generation===ocrGeneration)$('ocrStatus').textContent='Не удалось прочитать фото. Проверь интернет и попробуй JPG / PNG. Можно заполнить КБЖУ вручную.';}finally{if(worker)await worker.terminate().catch(()=>{});ocrBusy=false;document.querySelectorAll('.ocr-pick').forEach(b=>b.disabled=false);}}
+try{await stopScanner();const img=new Image();img.src=ocrURL;await img.decode();const canvas=document.createElement('canvas');const scale=Math.min(2,2200/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);await loadOCR();worker=await Tesseract.createWorker('rus+eng',1,{logger:m=>{if(generation===ocrGeneration&&m.status==='recognizing text')$('ocrStatus').textContent='Читаем этикетку… '+Math.round(m.progress*100)+'%';}});await worker.setParameters({tessedit_pageseg_mode:'11'});let {data}=await worker.recognize(canvas,{}, {text:true,blocks:true});let parsed=parseNutritionLayout(data);if(Object.values(parsed).filter(v=>v!==null).length<4&&generation===ocrGeneration){$('ocrStatus').textContent='Уточняем таблицу…';const c=canvas.getContext('2d');const pixels=c.getImageData(0,0,canvas.width,canvas.height);for(let i=0;i<pixels.data.length;i+=4){let g=.299*pixels.data[i]+.587*pixels.data[i+1]+.114*pixels.data[i+2];g=Math.max(0,Math.min(255,(g-128)*1.5+128));pixels.data[i]=pixels.data[i+1]=pixels.data[i+2]=g;}c.putImageData(pixels,0,0);await worker.setParameters({tessedit_pageseg_mode:'3'});const second=await worker.recognize(canvas,{}, {text:true,blocks:true});const next=parseNutritionLayout(second.data);for(const k of Object.keys(parsed)){if(next[k]!==null)recordNutrient(parsed,k,next[k],next.evidence[k]);}data.text+='\n--- Повторное распознавание ---\n'+second.data.text;}if(generation===ocrGeneration){$('ocrText').value=data.text;reviewLabel(data.text,parsed);}}catch(e){if(generation===ocrGeneration)$('ocrStatus').textContent='Не удалось прочитать фото. Проверь интернет и попробуй JPG / PNG. Можно заполнить КБЖУ вручную.';}finally{if(worker)await worker.terminate().catch(()=>{});ocrBusy=false;document.querySelectorAll('.ocr-pick').forEach(b=>b.disabled=false);}}
 function applyLabel(){const keys=['Energy','Protein','Fat','Carbs'];const values=keys.map(k=>$('ocr'+k).value);if(values.some(v=>!v.trim()||!Number.isFinite(Number(v))||Number(v)<0)||values.slice(1).some(v=>Number(v)>100)){$('ocrStatus').textContent='Заполни все четыре поля. КБЖУ должны быть неотрицательными, БЖУ — не больше 100 г.';return;}['energy','protein','fat','carbs'].forEach((id,i)=>$(id).value=values[i]);$('barcodeInput').value='';$('ocrStatus').textContent='КБЖУ перенесены. Укажи название продукта и порцию ниже.';$('foodname').scrollIntoView({behavior:'smooth',block:'center'});$('foodname').focus({preventScroll:true});}
 
 
