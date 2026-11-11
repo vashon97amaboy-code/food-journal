@@ -74,9 +74,66 @@ jobs:
       - name: Sync plugins and web files
         run: npx cap sync android
 
+      - name: Set monotonically increasing Android version
+        env:
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          path = Path("android/app/build.gradle")
+          text = path.read_text()
+          code = int(os.environ["ANDROID_VERSION_CODE"])
+          if code <= 1:
+              raise SystemExit("Invalid Android version code")
+          text, count_code = re.subn(r'(?m)^(\s*)versionCode\s+\d+\s*
+      - name: Upload installable test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sima-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+, lambda m: f'{m.group(1)}versionCode {code}', text, count=1)
+          text, count_name = re.subn(r'(?m)^(\s*)versionName\s+["\'][^"\']+["\']\s*
+      - name: Upload installable test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sima-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+, lambda m: f'{m.group(1)}versionName "0.1.{code}"', text, count=1)
+          if (count_code, count_name) != (1, 1):
+              raise SystemExit("Cannot safely update Android versionCode/versionName")
+          path.write_text(text)
+          print(f"Building Android versionCode={code} versionName=0.1.{code}")
+          PY
+
       - name: Build debug APK
         working-directory: android
         run: bash ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK certificate and version
+        env:
+          EXPECTED_SHA256: "326C56C2341FB6D53D543E4254D2FF4963854A89A06A54A1BDCC58F24493ADEB"
+          EXPECTED_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          test -n "$APKSIGNER"
+          test -n "$AAPT"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          ACTUAL_SHA256="$("$APKSIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr '[:lower:]' '[:upper:]')"
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo "::error::APK certificate changed! Refusing incompatible Android update."
+            exit 1
+          fi
+          "$AAPT" dump badging "$APK" | grep '^package:'
+          "$AAPT" dump badging "$APK" | grep -q "versionCode='$EXPECTED_VERSION_CODE'"
+          echo "APK signing and version code verified: $EXPECTED_VERSION_CODE"
 
       - name: Upload installable test APK
         uses: actions/upload-artifact@v4
