@@ -82,31 +82,15 @@ jobs:
           from pathlib import Path
           import os, re
           path = Path("android/app/build.gradle")
-          text = path.read_text()
+          src = path.read_text()
           code = int(os.environ["ANDROID_VERSION_CODE"])
           if code <= 1:
               raise SystemExit("Invalid Android version code")
-          text, count_code = re.subn(r'(?m)^(\s*)versionCode\s+\d+\s*
-      - name: Upload installable test APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: sima-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
-, lambda m: f'{m.group(1)}versionCode {code}', text, count=1)
-          text, count_name = re.subn(r'(?m)^(\s*)versionName\s+["\'][^"\']+["\']\s*
-      - name: Upload installable test APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: sima-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
-, lambda m: f'{m.group(1)}versionName "0.1.{code}"', text, count=1)
-          if (count_code, count_name) != (1, 1):
+          src, changed_code = re.subn(r'(?m)^(\s*)versionCode\s+\d+', lambda m: f'{m.group(1)}versionCode {code}', src, count=1)
+          src, changed_name = re.subn(r'(?m)^(\s*)versionName\s+"[^"]+"', lambda m: f'{m.group(1)}versionName "0.1.{code}"', src, count=1)
+          if (changed_code, changed_name) != (1, 1):
               raise SystemExit("Cannot safely update Android versionCode/versionName")
-          path.write_text(text)
+          path.write_text(src)
           print(f"Building Android versionCode={code} versionName=0.1.{code}")
           PY
 
