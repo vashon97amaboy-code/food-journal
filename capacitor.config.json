@@ -1,0 +1,11 @@
+{
+  "appId": "app.sima.foodjournal",
+  "appName": "Дневник питания",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
