@@ -43,6 +43,29 @@ jobs:
           test -d "$ANDROID_HOME"
           test -d "$ANDROID_HOME/platforms"
 
+      # Persist the same debug signing certificate across workflow runs.
+      # Never commit a release keystore or secrets to the public repository.
+      - name: Restore persistent debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: sima-android-debug-signing-v1
+
+      - name: Create debug key on first build only
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            echo "Created debug signing key for subsequent cached builds"
+          else
+            echo "Reused existing debug signing key"
+          fi
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+            -storepass android -alias androiddebugkey | grep -E 'SHA256:|Valid from:'
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
