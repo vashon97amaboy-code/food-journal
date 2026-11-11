@@ -19,7 +19,7 @@
 <div class="grid2" style="gap:8px"><button type="button" id="scanTypeBarcode" onclick="setScanType('barcode')" aria-pressed="true" style="font-size:13px;padding:11px 7px">▥ Штрихкод</button><button type="button" id="scanTypeLabel" class="secondary" onclick="setScanType('label')" aria-pressed="false" style="font-size:13px;padding:11px 7px">▤ Этикетка КБЖУ</button></div>
 <div id="scanBarcodePane" style="margin-top:16px"><p class="hint">Сфотографируй штрихкод — попробуем найти продукт и его КБЖУ.</p>
 <button class="secondary" style="width:100%" onclick="toggleScanner()" id="scanButton">📷 Сканировать штрихкод</button>
-<details style="margin-top:12px"><summary class="hint" style="cursor:pointer">Ввести код вручную</summary><div class="row" style="margin-top:8px"><input id="barcodeInput" inputmode="text" placeholder="Номер штрихкода" style="min-width:0;flex:1"><button onclick="lookupCode()">Найти</button></div></details>
+<button type="button" id="manualBarcodeButton" class="secondary" style="width:100%;margin-top:10px;border:1px solid #667a67" onclick="toggleManualBarcode()" aria-expanded="false" aria-controls="manualBarcodePanel">⌨ Ввести код вручную</button><div id="manualBarcodePanel" class="hidden" style="margin-top:10px"><div class="row"><input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="Номер штрихкода" aria-label="Номер штрихкода" style="min-width:0;flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupCode()}"><button type="button" onclick="lookupCode()">Найти</button></div></div>
 <div id="reader" class="hidden" style="margin-top:12px;overflow:hidden;border-radius:14px"></div><div id="lookupStatus" class="hint hidden" role="status" aria-live="polite" style="margin-top:10px"></div></div>
 <div id="scanLabelPane" class="hidden" style="margin-top:16px"><p class="hint">Сфотографируй таблицу КБЖУ на 100 г или 100 мл — без бликов.</p>
 <div class="grid2"><button class="secondary ocr-pick" onclick="document.getElementById('ocrCamera').click()">📷 Камера</button><button class="secondary ocr-pick" onclick="document.getElementById('ocrFile').click()">Выбрать фото</button></div>
@@ -99,6 +99,7 @@ let scanType='barcode';
 function setScanType(type){scanType=type==='label'?'label':'barcode';$('scanBarcodePane').classList.toggle('hidden',scanType!=='barcode');$('scanLabelPane').classList.toggle('hidden',scanType!=='label');for(const [id,key] of [['scanTypeBarcode','barcode'],['scanTypeLabel','label']]){const b=$(id),active=scanType===key;b.classList.toggle('secondary',!active);b.setAttribute('aria-pressed',String(active));}}
 let addMode='search';
 function setAddMode(mode){addMode=mode==='scan'?'scan':'search';$('addToolsScan').classList.toggle('hidden',addMode!=='scan');$('searchExtras').classList.toggle('hidden',addMode!=='search');for(const [id,key] of [['addModeSearch','search'],['addModeScan','scan']]){const button=$(id),active=addMode===key;button.classList.toggle('secondary',!active);button.setAttribute('aria-pressed',String(active));}}
+function toggleManualBarcode(force){const panel=$('manualBarcodePanel'),button=$('manualBarcodeButton');const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);button.setAttribute('aria-expanded',String(open));button.textContent=open?'⌨ Скрыть ввод кода':'⌨ Ввести код вручную';if(open)$('barcodeInput').focus();}
 function statusMessage(message){$('lookupStatus').textContent=message;$('lookupStatus').classList.toggle('hidden',!message);}
 function rememberProduct(item){const existing=state.savedFoods.findIndex(x=>x.code&&item.code&&x.code===item.code);if(existing>=0)state.savedFoods.splice(existing,1);else if(state.savedFoods.some(x=>x.name===item.name&&!item.code))return;state.savedFoods.unshift(item);state.savedFoods=state.savedFoods.slice(0,100);save();renderSavedFoods();}
 function saveCurrentProduct(){const name=$('foodname').value.trim();if(!name){statusMessage('Сначала заполни название и КБЖУ продукта.');return;}const v=['energy','protein','fat','carbs'].map(id=>Number($(id).value));if(v.some(x=>!Number.isFinite(x)||x<0)){statusMessage('Проверь КБЖУ.');return;}rememberProduct({name,code:$('barcodeInput').value.trim(),k:v[0],p:v[1],f:v[2],c:v[3]});statusMessage('Продукт сохранён на этом устройстве.');}
@@ -136,6 +137,7 @@ function resetFoodForm(){
  $('ocrReview').classList.add('hidden');$('ocrText').closest('details').open=false;
  $('ocrStatus').textContent='';$('ocrStatus').classList.add('hidden');
  $('lookupStatus').textContent='';$('lookupStatus').classList.add('hidden');
+ toggleManualBarcode(false);
  stopScanner();
 }
 
