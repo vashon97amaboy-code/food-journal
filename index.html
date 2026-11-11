@@ -495,6 +495,7 @@ function foodSearchKey(e){if(e.key==='Escape'){closeFoodSuggestions();return;}if
 function feedbackKind(text){
  const value=String(text||'').toLocaleLowerCase('ru-RU');
  if(!value.trim())return 'info';
+ if(/^(?:продукт найден!|найдено \d+ вариантов|найдено в твоих продуктах|продукт сохранён|код \d+ прочитан:)/.test(value))return 'success';
  if(/не удалось|не ответила|не найден|нет вариантов|ошибк|поврежд|неподдерж|проверь|заполни|слишком больш|некоррект|недоступ|отсутствуют|не прочитать|не распозн|нет в open food facts|не удалось подтвердить|внимание|неоднозначн|сначала|введи|нужно|не содержит/.test(value))return 'error';
  if(/успеш|сохранён|сохранен|перенесены|восстановлен|подготовлен|найден[оы]|сопоставлено 4 из 4/.test(value))return 'success';
  return 'info';
