@@ -19,6 +19,12 @@ let html=await readFile(resolve(root,'index.html'),'utf8');
 const remote='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
 if(!html.includes(remote))throw Error('Unable to locate browser barcode dependency');
 html=html.replace(remote,'./vendor/html5-qrcode.min.js');
+const buildNumber=process.env.GITHUB_RUN_NUMBER||'dev';
+if(!/^\d+$/.test(buildNumber)&&buildNumber!=='dev')throw Error('Unexpected Android build number');
+const buildMarker='data-build="web"';
+if(!html.includes(buildMarker))throw Error('Build label not found');
+html=html.replace(buildMarker,'data-build="'+buildNumber+'"');
+
 if(!html.includes('./vendor/html5-qrcode.min.js'))throw Error('Barcode dependency not bundled');
 await writeFile(resolve(target,'index.html'),html,'utf8');
 
