@@ -20,6 +20,17 @@ main{padding-top:calc(112px + env(safe-area-inset-top));padding-bottom:calc(36px
 .app-nav-bar{position:fixed;top:0;left:0;right:0;height:calc(72px + env(safe-area-inset-top));background:#141615;border-bottom:1px solid #303930;z-index:33;pointer-events:none}
 
 .menu-toggle{position:fixed;z-index:34;top:calc(12px + env(safe-area-inset-top));left:max(12px,calc((100vw - 520px)/2 + 8px));width:44px;height:44px;border:1px solid #53664d;border-radius:14px;background:#303a30;color:#c9f29e;font-size:25px;line-height:1;padding:0;box-shadow:0 4px 14px #0006}
+/* Android WebView: suppress brief blue tap streaks on navigation text. */
+.menu-toggle,.menu-close,.side-item,.side-item span,.menu-backdrop{
+ -webkit-tap-highlight-color:transparent;
+}
+.menu-toggle,.menu-close,.side-item{
+ -webkit-user-select:none;
+ user-select:none;
+ touch-action:manipulation;
+}
+.side-item:focus:not(:focus-visible),.menu-toggle:focus:not(:focus-visible),.menu-close:focus:not(:focus-visible){outline:none}
+.side-item:active{background:#344637;color:#c9efae}
 .menu-toggle:focus-visible,.side-item:focus-visible,.menu-close:focus-visible{outline:2px solid #a4d978;outline-offset:3px}
 .menu-backdrop{position:fixed;inset:0;z-index:35;background:#000a}
 .menu-backdrop.hidden{display:none}
