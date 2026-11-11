@@ -626,17 +626,71 @@ referenceFoods.push(
 
 let foodSearchResults=[],foodSearchIndex=-1,selectedFoodName='';
 function normalizeFoodName(s){return String(s).toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\p{N}]+/gu,' ').trim();}
-function oneTypo(a,b){if(Math.abs(a.length-b.length)>1)return false;let i=0,j=0,edits=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++edits>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++;}}return edits+(a.length-i)+(b.length-j)<=1;}
-function findFoodMatches(query,saved=state.savedFoods){const tokens=normalizeFoodName(query).split(/\s+/).filter(Boolean);if(!tokens.length)return [];const savedItems=saved.map(f=>({...f,origin:'Мой продукт',aliases:''}));const refs=referenceFoods.map(q=>({name:q[0],k:q[1],p:q[2],f:q[3],c:q[4],aliases:q[5],code:'',origin:'Справочно ≈'}));const all=[...savedItems,...refs];const exact=all.filter(f=>tokens.every(t=>normalizeFoodName(f.name+' '+f.aliases).includes(t)));const candidates=exact.length?exact:all.filter(f=>{const words=normalizeFoodName(f.name+' '+f.aliases).split(' ');return tokens.every(t=>words.some(w=>t.length>=5&&oneTypo(t,w)));});const seen=new Set();return candidates.filter(f=>{const key=normalizeFoodName(f.name);if(seen.has(key))return false;seen.add(key);return true;}).sort((a,b)=>{const rank=f=>{const name=normalizeFoodName(f.name),q=tokens.join(' ');return (f.origin==='Мой продукт'?1000:0)+(name===q?500:0)+(name.startsWith(q)?200:0)+(tokens.every(t=>name.split(' ').some(w=>w.startsWith(t)))?100:0);};return rank(b)-rank(a)||a.name.localeCompare(b.name,'ru');}).slice(0,20);}
+function oneTypo(a,b){
+ if(a===b)return true;
+ if(a.length===b.length){for(let i=0;i<a.length-1;i++)if(a[i]===b[i+1]&&a[i+1]===b[i]&&a.slice(0,i)===b.slice(0,i)&&a.slice(i+2)===b.slice(i+2))return true;}
+ if(Math.abs(a.length-b.length)>1)return false;
+ let i=0,j=0,edits=0;
+ while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++edits>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++;}}
+ return edits+(a.length-i)+(b.length-j)<=1;
+}
+const foodSearchSynonyms=[
+ ['капучино','капучино cappuccino капучина'],
+ ['макаронс','макаронс макарунс макарон macarons'],
+ ['макароны','макароны паста спагетти pasta'],
+ ['творог','творог творожок'],
+ ['гречка','гречка гречневая гречиха'],
+ ['курица','курица куриное куриный куриноефиле'],
+ ['йогурт','йогурт йогуртный yoghurt yogurt'],
+ ['молоко','молоко молочный milk'],
+ ['кофе','кофе coffee'],
+ ['картофель','картофель картошка картошечка'],
+ ['помидор','помидор помидоры томат'],
+ ['батончик','батончик bar']
+];
+function searchVariants(t){
+ const synonyms=foodSearchSynonyms.find(entry=>entry[1].split(' ').includes(t));
+ return synonyms?synonyms[1].split(' '):[t];
+}
+function foodMatchScore(food,tokens){
+ const name=normalizeFoodName(food.name),aliases=normalizeFoodName(food.aliases||''),text=name+' '+aliases;
+ const words=text.split(' ').filter(Boolean);
+ const full=tokens.join(' ');
+ if(name===full)return 1000;
+ let score=0;
+ for(const token of tokens){
+  const variants=searchVariants(token);
+  const direct=variants.includes(token)&&name.includes(token);
+  if(name.split(' ').includes(token))score+=100;
+  else if(name.startsWith(token))score+=85;
+  else if(direct)score+=65;
+  else if(aliases.includes(token))score+=52;
+  else if(words.some(w=>variants.some(v=>w===v||v.length>=3&&w.startsWith(v))))score+=45;
+  else if(token.length>=4&&words.some(w=>w.startsWith(token)))score+=40;
+  else if(token.length>=5&&words.some(w=>oneTypo(token,w)||w.length>=token.length&&oneTypo(token,w.slice(0,token.length))))score+=20;
+  else return 0;
+ }
+ return score+(name.startsWith(full)?50:0)+(food.origin==='Мой продукт'?120:0);
+}
+function findFoodMatches(query,saved=state.savedFoods){
+ const tokens=normalizeFoodName(query).split(/\s+/).filter(Boolean);
+ if(!tokens.length)return [];
+ const savedItems=saved.map(f=>({...f,origin:'Мой продукт',aliases:''}));
+ const refs=referenceFoods.map(q=>({name:q[0],k:q[1],p:q[2],f:q[3],c:q[4],aliases:q[5],code:'',origin:'Справочно ≈'}));
+ const seen=new Set();
+ return [...savedItems,...refs].map(f=>({...f,searchScore:foodMatchScore(f,tokens)})).filter(f=>f.searchScore>0).sort((a,b)=>b.searchScore-a.searchScore||a.name.localeCompare(b.name,'ru')).filter(f=>{const key=normalizeFoodName(f.name);if(seen.has(key))return false;seen.add(key);return true}).slice(0,20);
+}
 function closeFoodSuggestions(){invalidateFoodOnline();if(!$('foodSuggestions'))return;$('foodSuggestions').replaceChildren();$('foodSuggestions').classList.add('hidden');$('foodname').setAttribute('aria-expanded','false');$('foodname').removeAttribute('aria-activedescendant');foodSearchResults=[];foodSearchIndex=-1;selectedFoodName='';}
 
 let foodOnlineRequest=0,foodOnlineController=null,foodAutoTimer=null;const foodOnlineCache=new Map();
 function invalidateFoodOnline(){foodOnlineRequest++;clearTimeout(foodAutoTimer);foodAutoTimer=null;if(foodOnlineController)foodOnlineController.abort();foodOnlineController=null;if($('onlineFoodStatus'))$('onlineFoodStatus').textContent='';$('onlineFoodButton').disabled=false;}
-function renderFoodSuggestions(){const box=$('foodSuggestions');box.replaceChildren();box.classList.remove('hidden');$('foodname').setAttribute('aria-expanded','true');if(!foodSearchResults.length){box.textContent='Локальных совпадений нет. Если интернет доступен, приложение автоматически проверит большую базу. Можно также нажать кнопку поиска ниже.';return;}foodSearchResults.forEach((f,i)=>{const b=document.createElement('button');b.type='button';b.id='foodOption'+i;b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.className='secondary';b.style.cssText='width:100%;text-align:left;margin:3px 0;white-space:normal';b.textContent=f.name+' · '+f.origin+' · '+f.k+' ккал / 100 г · Б '+f.p+' / Ж '+f.f+' / У '+f.c;b.onclick=()=>chooseFoodName(i);box.appendChild(b);});}
-function searchFoodNames(){invalidateFoodOnline();const query=$('foodname').value;if(selectedFoodName&&query!==selectedFoodName){for(const id of ['energy','protein','fat','carbs'])$(id).value='';$('barcodeInput').value='';selectedFoodName='';}foodSearchResults=findFoodMatches(query);foodSearchIndex=-1;if(!query.trim()){closeFoodSuggestions();return;}renderFoodSuggestions();if(!foodSearchResults.length&&normalizeFoodName(query).length>=4){$('onlineFoodStatus').textContent='Нет в локальной базе — попробуем поискать в большой базе…';const requested=query.trim(),generation=foodOnlineRequest;foodAutoTimer=setTimeout(()=>{if(generation===foodOnlineRequest&&$('foodname').value.trim()===requested)searchOnlineFoods(true);},850);}}
-function mapOnlineFood(p){const n=p.nutriments||{};const val=key=>{const v=n[key];return v!==undefined&&v!==null&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;};let k=val('energy-kcal_100g');const kj=val('energy-kj_100g')??val('energy_100g');if(k===null&&kj!==null)k=Math.round(kj/4.184);const pr=val('proteins_100g'),f=val('fat_100g'),c=val('carbohydrates_100g');if([k,pr,f,c].some(v=>v===null))return null;const name=p.product_name_ru||p.product_name;if(!name)return null;return {name:name+(p.brands?' — '+p.brands:''),k,p:pr,f,c,code:p.code||'',origin:'Open Food Facts',aliases:''};}
-async function searchOnlineFoods(automatic=false){const query=$('foodname').value.trim();if(query.length<2){$('onlineFoodStatus').textContent='Введи хотя бы 2 символа названия.';return;}if(automatic&&findFoodMatches(query).length)return;invalidateFoodOnline();const request=foodOnlineRequest;const key=normalizeFoodName(query);$('onlineFoodStatus').textContent='Ищем в Open Food Facts…';$('onlineFoodButton').disabled=true;let timer;
-try{let items=foodOnlineCache.get(key);if(!items){foodOnlineController=new AbortController();const controller=foodOnlineController;timer=setTimeout(()=>controller.abort(),20000);const params=new URLSearchParams({search_terms:query,search_simple:'1',action:'process',json:'1',page_size:'40',fields:'code,product_name,product_name_ru,brands,nutriments'});const response=await fetch('https://world.openfoodfacts.org/cgi/search.pl?'+params,{signal:foodOnlineController.signal});if(!response.ok)throw Error('HTTP '+response.status);const data=await response.json();items=(data.products||[]).map(mapOnlineFood).filter(Boolean);foodOnlineCache.set(key,items);}if(request!==foodOnlineRequest||$('foodname').value.trim()!==query)return;const local=findFoodMatches(query);const seen=new Set(local.map(x=>x.code||normalizeFoodName(x.name)));foodSearchResults=[...local,...items.filter(x=>{const id=x.code||normalizeFoodName(x.name);if(seen.has(id))return false;seen.add(id);return true;})].slice(0,35);foodSearchIndex=-1;renderFoodSuggestions();$('onlineFoodStatus').textContent=items.length?'Найдено '+items.length+' вариантов с полным КБЖУ. Выбирай подходящий бренд и состав. Данные базы могут содержать ошибки.':'В большой базе нет вариантов с полным КБЖУ по этому запросу. Попробуй другое название или внеси данные с упаковки.';
+function renderFoodSuggestions(){const box=$('foodSuggestions');box.replaceChildren();box.classList.remove('hidden');$('foodname').setAttribute('aria-expanded','true');if(!foodSearchResults.length){box.textContent='Совпадений пока нет. Ищем в большой базе; можно также ввести значения вручную.';return;}foodSearchResults.forEach((f,i)=>{const b=document.createElement('button');b.type='button';b.id='foodOption'+i;b.setAttribute('role','option');b.setAttribute('aria-selected','false');b.className='secondary';b.style.cssText='width:100%;text-align:left;margin:3px 0;white-space:normal';b.textContent=f.name+' · '+f.origin+' · '+f.k+' ккал / 100 г · Б '+f.p+' / Ж '+f.f+' / У '+f.c;b.onclick=()=>chooseFoodName(i);box.appendChild(b);});}
+function searchFoodNames(){invalidateFoodOnline();const query=$('foodname').value;if(selectedFoodName&&query!==selectedFoodName){for(const id of ['energy','protein','fat','carbs'])$(id).value='';$('barcodeInput').value='';selectedFoodName='';}foodSearchResults=findFoodMatches(query);foodSearchIndex=-1;if(!query.trim()){closeFoodSuggestions();return;}renderFoodSuggestions();if(normalizeFoodName(query).length>=4){$('onlineFoodStatus').textContent=foodSearchResults.length?'Проверяем ещё варианты в большой базе…':'Нет локальных совпадений — проверяем большую базу…';const requested=query.trim(),generation=foodOnlineRequest;foodAutoTimer=setTimeout(()=>{if(generation===foodOnlineRequest&&$('foodname').value.trim()===requested)searchOnlineFoods(true);},850);}}
+function mapOnlineFood(p){const n=p.nutriments||{};const val=key=>{const v=n[key];return v!==undefined&&v!==null&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0?Number(v):null;};let k=val('energy-kcal_100g');const kj=val('energy-kj_100g')??val('energy_100g');if(k===null&&kj!==null)k=Math.round(kj/4.184);const pr=val('proteins_100g'),f=val('fat_100g'),c=val('carbohydrates_100g');if([k,pr,f,c].some(v=>v===null))return null;const name=p.product_name_ru||p.product_name;if(!name)return null;return {name:name+(p.brands?' — '+p.brands:''),k,p:pr,f,c,code:p.code||'',origin:'Open Food Facts',aliases:name+' '+(p.brands||'')};}
+async function searchOnlineFoods(automatic=false){const query=$('foodname').value.trim();if(query.length<2){$('onlineFoodStatus').textContent='Введи хотя бы 2 символа названия.';return;}invalidateFoodOnline();const request=foodOnlineRequest;const key=normalizeFoodName(query);$('onlineFoodStatus').textContent='Ищем в Open Food Facts…';$('onlineFoodButton').disabled=true;let timer;
+try{let items=foodOnlineCache.get(key);if(!items){foodOnlineController=new AbortController();const controller=foodOnlineController;timer=setTimeout(()=>controller.abort(),20000);const params=new URLSearchParams({search_terms:query,search_simple:'1',action:'process',json:'1',page_size:'40',fields:'code,product_name,product_name_ru,brands,nutriments'});const response=await fetch('https://world.openfoodfacts.org/cgi/search.pl?'+params,{signal:foodOnlineController.signal});if(!response.ok)throw Error('HTTP '+response.status);const data=await response.json();items=(data.products||[]).map(mapOnlineFood).filter(Boolean);foodOnlineCache.set(key,items);}if(request!==foodOnlineRequest||$('foodname').value.trim()!==query)return;const local=findFoodMatches(query),tokens=normalizeFoodName(query).split(' ').filter(Boolean),seenNames=new Set(local.map(x=>normalizeFoodName(x.name))),seenCodes=new Set(local.map(x=>x.code).filter(Boolean));
+ const online=items.filter(x=>{const name=normalizeFoodName(x.name),code=x.code||'';if(seenNames.has(name)||code&&seenCodes.has(code))return false;if(!foodMatchScore(x,tokens))return false;seenNames.add(name);if(code)seenCodes.add(code);return true;}).map(x=>({...x,searchScore:foodMatchScore(x,tokens)})).sort((a,b)=>b.searchScore-a.searchScore);
+ foodSearchResults=[...local,...online].slice(0,35);foodSearchIndex=-1;renderFoodSuggestions();$('onlineFoodStatus').textContent=items.length?'Найдено '+items.length+' вариантов с полным КБЖУ. Выбирай подходящий бренд и состав. Данные базы могут содержать ошибки.':'В большой базе нет вариантов с полным КБЖУ по этому запросу. Попробуй другое название или внеси данные с упаковки.';
 }catch(e){if(request===foodOnlineRequest)$('onlineFoodStatus').textContent='Большая база сейчас не ответила. Локальные варианты доступны; попробуй поиск позже.';}finally{clearTimeout(timer);if(request===foodOnlineRequest){foodOnlineController=null;$('onlineFoodButton').disabled=false;}}}
 function chooseFoodName(index){const f=foodSearchResults[index];if(!f)return;const grams=$('grams').value;closeFoodSuggestions();$('foodname').value=f.name;selectedFoodName=f.name;[['energy','k'],['protein','p'],['fat','f'],['carbs','c']].forEach(([id,key])=>$(id).value=f[key]);$('grams').value=grams;$('barcodeInput').value=f.code||'';$('foodSearchHint').textContent=f.origin==='Open Food Facts'?'Подставлены КБЖУ из Open Food Facts. Проверь бренд и состав; у напитков база может указывать значения на 100 мл. Вес порции вводится в граммах.':f.origin==='Мой продукт'?'Выбран твой сохранённый продукт. Укажи вес порции.':'Подставлены средние КБЖУ на 100 г. Рецепт может отличаться; масло и соусы учитывай отдельно. Укажи вес готовой или сырой порции согласно выбранному варианту.';$('grams').focus();}
 function foodSearchKey(e){if(e.key==='Escape'){closeFoodSuggestions();return;}if(!foodSearchResults.length)return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();foodSearchIndex=(foodSearchIndex+(e.key==='ArrowDown'?1:-1)+foodSearchResults.length)%foodSearchResults.length;foodSearchResults.forEach((_,i)=>$('foodOption'+i).setAttribute('aria-selected',String(i===foodSearchIndex)));$('foodname').setAttribute('aria-activedescendant','foodOption'+foodSearchIndex);$('foodOption'+foodSearchIndex).scrollIntoView({block:'nearest'});}else if(e.key==='Enter'&&foodSearchIndex>=0){e.preventDefault();chooseFoodName(foodSearchIndex);}}
