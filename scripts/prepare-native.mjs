@@ -1,6 +1,7 @@
 import {mkdir,copyFile,readFile,writeFile,rm,stat,readdir} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {dirname,resolve} from 'node:path';
+import {gunzipSync} from 'node:zlib';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const target=resolve(root,'www');
@@ -31,7 +32,7 @@ if(coreFiles.length<8)throw Error('Incomplete Tesseract WASM runtime: '+coreFile
 for(const file of coreFiles)await copyFile(resolve(coreRoot,file),resolve(ocrRoot,'core',file));
 
 for(const language of ['rus','eng']){
- const targetLang=resolve(ocrRoot,'lang',language+'.traineddata.gz');
+ const targetLang=resolve(ocrRoot,'lang',language+'.traineddata');
  const url='https://tessdata.projectnaptha.com/4.0.0/'+language+'.traineddata.gz';
  let saved=false;
  for(let attempt=1;attempt<=3&&!saved;attempt++){
@@ -43,7 +44,7 @@ for(const language of ['rus','eng']){
    if(!response.ok)throw Error('HTTP '+response.status);
    const data=new Uint8Array(await response.arrayBuffer());
    if(data.length<1000000||data[0]!==0x1f||data[1]!==0x8b)throw Error('Invalid OCR traineddata '+language);
-   await writeFile(targetLang,data);saved=true;
+   await writeFile(targetLang,gunzipSync(data));saved=true;
   }catch(error){if(attempt===3)throw new Error('Failed to bundle '+language+' OCR data: '+error.message);}
  }
 }
