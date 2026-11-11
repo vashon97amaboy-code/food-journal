@@ -26,7 +26,7 @@ await mkdir(resolve(ocrRoot,'lang'),{recursive:true});
 await copyFile(resolve(root,'node_modules/tesseract.js/dist/tesseract.min.js'),resolve(ocrRoot,'tesseract.min.js'));
 await copyFile(resolve(root,'node_modules/tesseract.js/dist/worker.min.js'),resolve(ocrRoot,'worker.min.js'));
 const coreRoot=resolve(root,'node_modules/tesseract.js-core');
-const coreFiles=(await readdir(coreRoot)).filter(name=>/^tesseract-core.*\\.wasm(\\.js)?$/.test(name));
+const coreFiles=(await readdir(coreRoot)).filter(name=>/^tesseract-core.*\.wasm(\.js)?$/.test(name));
 if(coreFiles.length<8)throw Error('Incomplete Tesseract WASM runtime: '+coreFiles.join(', '));
 for(const file of coreFiles)await copyFile(resolve(coreRoot,file),resolve(ocrRoot,'core',file));
 
