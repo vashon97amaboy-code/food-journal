@@ -128,8 +128,9 @@ async function stopScanner(){if(!scanner)return;const old=scanner;scanner=null;t
 async function toggleScanner(){await openInAppCamera('barcode');}
 
 
-let cameraStream=null,cameraPurpose=null;
+let cameraStream=null,cameraPurpose=null,cameraRequest=0;
 function closeInAppCamera(){
+ cameraRequest++;
  const video=$('cameraVideo');
  const stream=cameraStream;cameraStream=null;cameraPurpose=null;
  if(stream)for(const track of stream.getTracks())track.stop();
@@ -139,6 +140,7 @@ function closeInAppCamera(){
 }
 async function openInAppCamera(purpose){
  closeInAppCamera();
+ const request=cameraRequest;
  if(!navigator.mediaDevices?.getUserMedia){
   const message='Встроенная камера недоступна в этом браузере. Можно выбрать уже готовое фото или ввести данные вручную.';
   if(purpose==='label'){$('ocrStatus').textContent=message;$('ocrStatus').classList.remove('hidden');}
@@ -147,13 +149,14 @@ async function openInAppCamera(purpose){
  }
  try{
   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});
-  if(!$('addToolsScan')||$('addToolsScan').classList.contains('hidden')){stream.getTracks().forEach(track=>track.stop());return;}
+  if(request!==cameraRequest||$('addToolsScan').classList.contains('hidden')||(purpose==='label')!==($('scanTypeLabel').getAttribute('aria-pressed')==='true')){stream.getTracks().forEach(track=>track.stop());return;}
   cameraPurpose=purpose;cameraStream=stream;
   const video=$('cameraVideo');video.srcObject=stream;
   $('inAppCamera').classList.remove('hidden');
   await video.play();
   $('inAppCamera').scrollIntoView({behavior:'smooth',block:'nearest'});
  }catch(error){
+  if(request!==cameraRequest)return;
   closeInAppCamera();
   const message=error?.name==='NotAllowedError'?'Нет доступа к камере. Разреши доступ в настройках браузера.':'Не удалось открыть камеру. Можно выбрать готовое фото или ввести данные вручную.';
   if(purpose==='label'){$('ocrStatus').textContent=message;$('ocrStatus').classList.remove('hidden');}
@@ -182,6 +185,7 @@ async function captureInAppCamera(){
  }
 }
 
+window.addEventListener('pagehide',closeInAppCamera);
 let ocrBusy=false,ocrURL=null,ocrGeneration=0;
 function resetFoodForm(){
  closeInAppCamera();closeFoodSuggestions();ocrGeneration++;
