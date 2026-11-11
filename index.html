@@ -462,6 +462,7 @@ function labelOCROptions(logger){return window.Capacitor?.isNativePlatform?.()?{
  workerPath:new URL('./vendor/ocr/worker.min.js',location.href).href,
  corePath:new URL('./vendor/ocr/core',location.href).href,
  langPath:new URL('./vendor/ocr/lang',location.href).href,
+ gzip:false,
  workerBlobURL:false
 }:{logger};}
 async function scanLabel(input){const file=input instanceof Blob?input:input.files[0];if(!(input instanceof Blob))input.value='';if(!file||ocrBusy)return;$('ocrStatus').classList.remove('hidden');if(!file.type.startsWith('image/')){$('ocrStatus').textContent='Выбери фотографию в формате JPG или PNG.';return;}if(file.size>15*1024*1024){$('ocrStatus').textContent='Фото слишком большое (максимум 15 МБ). Уменьши снимок и повтори.';return;}ocrBusy=true;const generation=ocrGeneration;document.querySelectorAll('.ocr-pick').forEach(b=>b.disabled=true);$('ocrReview').classList.add('hidden');$('ocrText').value='';if(ocrURL)URL.revokeObjectURL(ocrURL);ocrURL=URL.createObjectURL(file);$('ocrPreview').src=ocrURL;$('ocrPreview').classList.remove('hidden');$('ocrStatus').textContent=window.Capacitor?.isNativePlatform?.()?'Запускаем локальное распознавание русского и английского текста…':'Загружаем распознаватель… При первом запуске это может занять время.';let worker;
