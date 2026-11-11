@@ -66,7 +66,7 @@ body.menu-open{overflow:hidden}
 </section><section id="stats" class="hidden"><h1>Прогресс</h1><div class="card">
 <div class="row" style="gap:8px"><h2 style="margin:0">История питания</h2><div class="stats-switch" role="group" aria-label="Период"><button type="button" id="statsWeek" onclick="setStatsPeriod('week')" aria-pressed="true">Неделя</button><button type="button" id="statsMonth" class="secondary" onclick="setStatsPeriod('month')" aria-pressed="false">Месяц</button></div></div>
 <div class="row stats-period-nav"><button type="button" class="secondary" aria-label="Предыдущий период" onclick="shiftStatsPeriod(-1)">‹</button><strong id="statsPeriodTitle"></strong><button type="button" class="secondary" id="statsPeriodNext" aria-label="Следующий период" onclick="shiftStatsPeriod(1)">›</button></div>
-<div class="stats-summary" id="statsSummary" aria-live="polite"></div>
+<div class="stats-summary" id="statsSummary" aria-live="polite"></div><p class="hint" style="margin:8px 0">Средние показатели считаются только по дням с записями, а не по пустым дням.</p>
 <div class="stats-switch stats-macro-switch" role="group" aria-label="Показатель графика"><button type="button" id="statsMetricK" onclick="setStatsMetric('k')">Ккал</button><button type="button" class="secondary" id="statsMetricP" onclick="setStatsMetric('p')">Белки</button><button type="button" class="secondary" id="statsMetricF" onclick="setStatsMetric('f')">Жиры</button><button type="button" class="secondary" id="statsMetricC" onclick="setStatsMetric('c')">Углеводы</button></div>
 <div id="statsChart" class="stats-chart" aria-label="График питания по дням"></div>
 <p class="hint" style="margin:8px 0 0">Нажми на день на графике или в списке, чтобы посмотреть записи.</p>
