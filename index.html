@@ -216,7 +216,8 @@ function simaReact(message,celebrate=false){
 function reactToEntry(before){
  const gained=achievementDefinitions.find(def=>!before.has(def.id)&&def.measure(state.entries,state.recipes)>=def.target);
  if(gained){simaReact('🏆 Новая награда: '+gained.icon+' «'+gained.name+'»! Сима радуется вместе с тобой.',true);return;}
- const count=state.entries.filter(e=>e.date===today()).length;
+ const count=state.entries.filter(e=>e.date===selectedDiaryDay).length;
+ if(selectedDiaryDay!==today()){simaReact('Готово! Добавила запись за '+diaryDayDate(selectedDiaryDay).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})+' 🐾');return;}
  simaReact(count===1?'Мур! Первая запись за сегодня 🐾':count===3?'Сегодня уже три записи. Сима довольно мурчит 🐈':'Записано! Спасибо, что делишься со мной 💚',count===1);
 }
 function reactToRecipe(before){
