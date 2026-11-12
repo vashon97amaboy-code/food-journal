@@ -124,6 +124,11 @@ input:focus-visible,select:focus-visible{outline:2px solid #a9df79;outline-offse
 .bottom-item.active{color:#c0ee8c;background:#2d3f2f}
 .bottom-add{background:#a9df79;color:#142116;width:51px;height:51px;margin:auto;border-radius:50%;font-size:37px;line-height:1;box-shadow:0 4px 18px #9cc66c45;justify-content:center;padding:0}
 .bottom-add.active{background:#c3f397}
+body:has(.onboard:not(.hidden)) .bottom-nav{display:none}
+body:has(.onboard:not(.hidden)) .menu-toggle,body:has(.onboard:not(.hidden)) .app-nav-bar{visibility:hidden}
+.bottom-nav:focus-within{border-color:#526e54}
+#recipesDetails{scroll-margin-top:calc(95px + env(safe-area-inset-top))}
+
 @media(max-width:360px){.bottom-item{font-size:9px}.bottom-glyph{font-size:21px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}#home .cat{animation:none!important}}
 </style></head><body><nav class="bottom-nav" aria-label="Быстрая навигация">
@@ -206,7 +211,7 @@ function renderDiaryDate(){
  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
  $('dayHeading').textContent=now?'Сегодня':selectedDiaryDay===yesterday.toLocaleDateString('sv-SE')?'Вчера':'Дневник за день';
  $('diaryDate').max=today();$('diaryDate').value=selectedDiaryDay;
- $('diaryDateLabel').textContent=(now?'Сегодня':selectedDiaryDay===yesterday.toLocaleDateString('sv-SE')?'Вчера, ':'')+d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+ $('diaryDateLabel').textContent=(now?'Сегодня, ':selectedDiaryDay===yesterday.toLocaleDateString('sv-SE')?'Вчера, ':'')+d.toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
  $('diaryNext').disabled=now;$('diaryToday').classList.toggle('hidden',now);
  const context=$('addDateContext');if(context)context.textContent='Добавление за '+d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})+(now?' (сегодня)':' (прошедший день)');
 }
