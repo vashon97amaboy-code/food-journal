@@ -129,7 +129,7 @@ body.menu-open{overflow:hidden}
 const KEY='sima-food-v1';let state;try{state=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){state={}};state.entries=Array.isArray(state.entries)?state.entries:[];state.savedFoods=Array.isArray(state.savedFoods)?state.savedFoods:[];state.favoriteFoods=Array.isArray(state.favoriteFoods)?state.favoriteFoods.filter(x=>typeof x==='string').slice(0,100):[];state.recipes=Array.isArray(state.recipes)?state.recipes.filter(x=>x&&Array.isArray(x.ingredients)).slice(0,100):[];state.goals=state.goals||{k:1900,p:110,f:65,c:210};state.profile=state.profile||{};const today=()=>new Date().toLocaleDateString('sv-SE');
 let selectedDiaryDay=today();
 function diaryDayDate(key){const [year,month,day]=key.split('-').map(Number);return new Date(year,month-1,day,12);}
-function validDiaryDay(key){if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(key||''))return false;const d=diaryDayDate(key);return !Number.isNaN(d.getTime())&&d.toLocaleDateString('sv-SE')===key&&key<=today();}
+function validDiaryDay(key){if(!/^\d{4}-\d{2}-\d{2}$/.test(key||''))return false;const d=diaryDayDate(key);return !Number.isNaN(d.getTime())&&d.toLocaleDateString('sv-SE')===key&&key<=today();}
 function chooseDiaryDay(key){if(!validDiaryDay(key)){$('diaryDate').value=selectedDiaryDay;return;}selectedDiaryDay=key;render();}
 function shiftDiaryDay(delta){const d=diaryDayDate(selectedDiaryDay);d.setDate(d.getDate()+delta);const key=d.toLocaleDateString('sv-SE');if(validDiaryDay(key)){selectedDiaryDay=key;render();}}
 function jumpDiaryToday(){selectedDiaryDay=today();render();}
