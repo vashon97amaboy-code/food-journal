@@ -131,6 +131,61 @@ body:has(.onboard:not(.hidden)) .menu-toggle,body:has(.onboard:not(.hidden)) .ap
 
 @media(max-width:360px){.bottom-item{font-size:9px}.bottom-glyph{font-size:21px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}#home .cat{animation:none!important}}
+
+/* Sima: streamlined food entry, scan and recipe workspace */
+#add .add-heading{padding:3px 3px 6px}
+#add .add-eyebrow{display:inline-block;color:#a9d67b;font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+#add .add-heading h1{font-size:28px;letter-spacing:-.65px;margin:3px 0 7px}
+#add .add-date-context{display:inline-flex;align-items:center;max-width:100%;border:1px solid #465c47;background:#26392b;border-radius:20px;padding:7px 11px;margin:1px 0 6px;color:#c2e6a9;font-size:12px}
+#add .add-mode-card{background:#223128;border:1px solid #3e5142;border-radius:20px;padding:5px;margin:10px 0 15px}
+#add .add-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+#add .add-mode-tab{background:#a9df79;color:#162319;display:flex;justify-content:center;align-items:center;gap:6px;min-width:0;min-height:44px;padding:9px 5px;border-radius:15px;font-size:13px;white-space:nowrap}
+#add .add-mode-tab.secondary{background:transparent;color:#a8b9a9}
+#add .add-mode-tab[aria-pressed="true"]{background:#a9df79;color:#132116;box-shadow:0 2px 8px #0003}
+#add .add-mode-tab span{font-size:18px;line-height:1}
+#add .add-food-card{padding:19px 17px;margin:12px 0}
+#add .add-card-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
+#add .add-card-title h2{margin:0 0 3px;font-size:18px}
+#add .add-card-title p{margin:0}
+#add .add-card-title>span{display:grid;place-items:center;width:35px;height:35px;flex:none;border-radius:12px;background:#344b35;color:#c2ec92}
+#add label{color:#c9d8c8;font-size:12px;margin:15px 0 6px}
+#add input,#add select,#add textarea{background:#202c25;border-color:#435846;border-radius:13px;color:#f1f5ee;min-height:45px}
+#add input:focus,#add select:focus,#add textarea:focus{border-color:#a6d576}
+#add input::placeholder{color:#8e9d90}
+#add #foodSuggestions{background:#213026;border-radius:14px;border-color:#526b53!important}
+#add #foodSearchHint{font-size:11px;line-height:1.6;margin-top:10px}
+#add #onlineFoodButton{font-size:12px;border:1px solid #455b49;background:#314436}
+#add .portion-preview{margin:18px 0 14px;background:linear-gradient(120deg,#2d4830,#263b2b);border:1px solid #4e724e;border-radius:17px;padding:14px 15px}
+#add .portion-preview>div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+#add .portion-preview-label{color:#aecbad;font-size:12px}
+#add #portionCalories{color:#cef19e;font-size:20px;font-weight:780;white-space:nowrap}
+#add #portionMacros{color:#bbd4b5;font-size:12px;margin-top:7px;display:block;line-height:1.5}
+#add .add-save-button{min-height:50px;border-radius:16px;background:#a9df79;color:#132217;box-shadow:0 5px 17px #6d9c4a36}
+#add .scanner-card{padding:19px 16px;margin:12px 0}
+#add .scan-type-tabs{gap:7px}
+#add .scan-type-tabs button{font-size:12px;padding:11px 5px;min-height:42px}
+#add .scanner-card .hint{line-height:1.6}
+#add .scan-primary{display:block;width:100%;background:#a9df79;color:#142217;border-radius:15px;min-height:47px}
+#add .scan-manual{width:100%;margin-top:10px;border:1px solid #516650;background:#2d4031}
+#add .scan-photo-actions{gap:9px}
+#add .scan-photo-actions .ocr-pick{min-width:0;padding:11px 7px;font-size:12px}
+#add .quick-access-card>summary{font-size:15px;font-weight:700;cursor:pointer;color:#d8e8d3}
+#add #quickAccessDetails>div>.card{background:#223028;border-color:#344b3b;box-shadow:none}
+#add .recipe-home{padding:20px 16px}
+#add .recipe-heading{display:flex;align-items:center;gap:12px}
+#add .recipe-heading-icon{font-size:29px;display:grid;place-items:center;width:52px;height:52px;background:#324737;border:1px solid #506c51;border-radius:17px}
+#add .recipe-heading h2{margin:0;font-size:19px}
+#add .recipe-heading .hint{margin:5px 0 0;font-size:12px}
+#add #recipeSavedList>.meal{background:#24342a;border:1px solid #3d5441;border-radius:17px;padding:14px;margin:12px 0}
+#add #recipeSavedList>.meal strong{font-size:16px}
+#add #recipeSavedList>.meal p{margin:7px 0 12px}
+#add #recipeSavedList>.meal .row{gap:7px}
+#add #recipeSavedList>.meal .row button{font-size:12px;padding:10px 12px}
+#add #recipeEditor{border-top:1px solid #405442;padding-top:13px}
+#add #recipeEditor>.row{flex-wrap:wrap}
+#add #recipeEditor button{border-radius:12px}
+#add #recipesPane>.card{margin-top:13px}
+@media(max-width:370px){#add .add-mode-tab{gap:2px;font-size:11px}#add .add-mode-tab span{font-size:15px}#add #portionCalories{font-size:18px}}
 </style></head><body><nav class="bottom-nav" aria-label="Быстрая навигация">
  <button type="button" id="bottomHome" class="bottom-item active" onclick="show('home')" aria-label="Дневник"><span class="bottom-glyph" aria-hidden="true">⌂</span><span>Дневник</span></button>
  <button type="button" id="bottomStats" class="bottom-item" onclick="show('stats')" aria-label="Прогресс"><span class="bottom-glyph" aria-hidden="true">▥</span><span>Прогресс</span></button>
@@ -148,14 +203,14 @@ body:has(.onboard:not(.hidden)) .menu-toggle,body:has(.onboard:not(.hidden)) .ap
 <button type="button" id="addModeSearch" class="add-mode-tab" onclick="setAddMode('search')" aria-pressed="true"><span aria-hidden="true">⌕</span> Поиск</button>
 <button type="button" id="addModeScan" class="add-mode-tab secondary" onclick="setAddMode('scan')" aria-pressed="false"><span aria-hidden="true">▥</span> Сканер</button>
 <button type="button" id="addModeRecipes" class="add-mode-tab secondary" onclick="setAddMode('recipes')" aria-pressed="false"><span aria-hidden="true">▤</span> Рецепты</button>
-</div></div><div id="addToolsScan" class="hidden"><div class="card" style="padding:16px">
-<div class="grid2" style="gap:8px"><button type="button" id="scanTypeBarcode" onclick="setScanType('barcode')" aria-pressed="true" style="font-size:13px;padding:11px 7px">▥ Штрихкод</button><button type="button" id="scanTypeLabel" class="secondary" onclick="setScanType('label')" aria-pressed="false" style="font-size:13px;padding:11px 7px">▤ Этикетка КБЖУ</button></div>
+</div></div><div id="addToolsScan" class="hidden"><div class="card scanner-card">
+<div class="grid2 scan-type-tabs"><button type="button" id="scanTypeBarcode" onclick="setScanType('barcode')" aria-pressed="true">▥ Штрихкод</button><button type="button" id="scanTypeLabel" class="secondary" onclick="setScanType('label')" aria-pressed="false">▤ Этикетка КБЖУ</button></div>
 <div id="scanBarcodePane" style="margin-top:16px"><p class="hint">Сфотографируй штрихкод — попробуем найти продукт и его КБЖУ.</p>
-<button class="secondary" style="width:100%" onclick="toggleScanner()" id="scanButton">📷 Сканировать штрихкод</button>
-<button type="button" id="manualBarcodeButton" class="secondary" style="width:100%;margin-top:10px;border:1px solid #667a67" onclick="toggleManualBarcode()" aria-expanded="false" aria-controls="manualBarcodePanel">⌨ Ввести код вручную</button><div id="manualBarcodePanel" class="hidden" style="margin-top:10px"><div class="row"><input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="Номер штрихкода" aria-label="Номер штрихкода" style="min-width:0;flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupCode()}"><button type="button" onclick="lookupCode()">Найти</button></div></div>
+<button class="scan-primary" onclick="toggleScanner()" id="scanButton">📷 Сканировать штрихкод</button>
+<button type="button" id="manualBarcodeButton" class="secondary scan-manual" onclick="toggleManualBarcode()" aria-expanded="false" aria-controls="manualBarcodePanel">⌨ Ввести код вручную</button><div id="manualBarcodePanel" class="hidden" style="margin-top:10px"><div class="row"><input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="Номер штрихкода" aria-label="Номер штрихкода" style="min-width:0;flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupCode()}"><button type="button" onclick="lookupCode()">Найти</button></div></div>
 <div id="reader" class="hidden" style="margin-top:12px;overflow:hidden;border-radius:14px"></div><div id="lookupStatus" class="hint hidden" role="status" aria-live="polite" style="margin-top:10px"></div></div>
 <div id="scanLabelPane" class="hidden" style="margin-top:16px"><p class="hint">Сфотографируй таблицу КБЖУ на 100 г или 100 мл — без бликов.</p>
-<div class="grid2"><button class="secondary ocr-pick" onclick="captureFoodPhoto('label')">📷 Камера</button><button class="secondary ocr-pick" onclick="document.getElementById('ocrFile').click()">Выбрать фото</button></div>
+<div class="grid2 scan-photo-actions"><button class="scan-primary ocr-pick" onclick="captureFoodPhoto('label')">📷 Камера</button><button class="secondary ocr-pick" onclick="document.getElementById('ocrFile').click()">Выбрать фото</button></div>
 <input id="ocrCamera" type="file" accept="image/*" capture="environment" hidden onchange="scanLabel(this)"><input id="ocrFile" type="file" accept="image/*" hidden onchange="scanLabel(this)">
 <img id="ocrPreview" alt="Фото этикетки" class="hidden" style="max-width:100%;max-height:220px;object-fit:contain;margin-top:12px;border-radius:12px">
 <div id="ocrStatus" class="hint hidden" role="status" aria-live="polite" style="margin-top:10px"></div>
