@@ -191,14 +191,37 @@ body:has(.onboard:not(.hidden)) .menu-toggle,body:has(.onboard:not(.hidden)) .ap
 #add #recipeEditor button{border-radius:12px}
 #add #recipesPane>.card{margin-top:13px}
 @media(max-width:370px){#add .add-mode-tab{gap:2px;font-size:11px}#add .add-mode-tab span{font-size:15px}#add #portionCalories{font-size:18px}}
+
+/* Motion polish: gentle, GPU-friendly feedback and accessible reduced motion. */
+@property --p {syntax:"<percentage>";inherits:false;initial-value:0%}
+main>section:not(.hidden){animation:sima-screen-in .3s cubic-bezier(.22,.7,.3,1) both}
+@keyframes sima-screen-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+#home .ring{transition:--p .65s cubic-bezier(.22,.7,.3,1)}
+#home .bar i{transition:width .55s cubic-bezier(.22,.7,.3,1)}
+.meal-content{animation:sima-meal-in .2s ease-out both}
+@keyframes sima-meal-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.bottom-item.active .bottom-glyph,.bottom-add.active>span{animation:sima-nav-in .26s ease-out both}
+@keyframes sima-nav-in{0%{transform:scale(.84)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
+.sima-notice.visible{animation:sima-toast-in .25s ease-out both}
+@keyframes sima-toast-in{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+#cat{appearance:none;border:0;padding:0;background:transparent;color:inherit;display:inline-flex;align-items:center;justify-content:center;min-width:72px;min-height:72px;cursor:pointer;border-radius:18px}
+#cat:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#cat:not(.celebrate):not(.happy){animation:sima-idle 5.5s ease-in-out infinite}
+@keyframes sima-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.cat-svg .sima-eye{transform-box:fill-box;transform-origin:center;animation:sima-eye-blink 8.5s ease-in-out infinite}
+@keyframes sima-eye-blink{0%,47%,51%,100%{transform:scaleY(1)}49%{transform:scaleY(.08)}}
+@media(prefers-reduced-motion:reduce){
+  main>section:not(.hidden),.meal-content,.bottom-item.active .bottom-glyph,.bottom-add.active>span,.sima-notice.visible,#cat:not(.celebrate):not(.happy),.cat-svg .sima-eye{animation:none!important}
+  #home .ring,#home .bar i{transition:none!important}
+}
 </style></head><body><nav class="bottom-nav" aria-label="Быстрая навигация">
  <button type="button" id="bottomHome" class="bottom-item active" onclick="show('home')" aria-label="Дневник"><span class="bottom-glyph" aria-hidden="true">⌂</span><span>Дневник</span></button>
  <button type="button" id="bottomStats" class="bottom-item" onclick="show('stats')" aria-label="Прогресс"><span class="bottom-glyph" aria-hidden="true">▥</span><span>Прогресс</span></button>
  <button type="button" id="bottomAdd" class="bottom-add" onclick="show('add')" aria-label="Добавить продукт"><span aria-hidden="true">＋</span></button>
  <button type="button" id="bottomRecipes" class="bottom-item" onclick="showRecipesTab()" aria-label="Рецепты"><span class="bottom-glyph" aria-hidden="true">▤</span><span>Рецепты</span></button>
  <button type="button" id="bottomProfile" class="bottom-item" onclick="show('settings')" aria-label="Профиль и настройки"><span class="bottom-glyph" aria-hidden="true">◯</span><span>Профиль</span></button>
-</nav><main><section id="home"><div class="row"><div><small id="date"></small><h1 id="dayHeading">Сегодня</h1><span class="muted">Сима · дневник питания</span></div><div style="text-align:center"><span id="cat" class="cat" role="img" aria-label="Маскот кошка"><svg class="cat-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#202820"/><path d="M45 92 40 40 78 65Q96 59 114 65L152 40 147 92Q168 149 96 153Q24 149 45 92Z" fill="#777b7a" stroke="#b2b6b0" stroke-width="5"/><ellipse cx="72" cy="100" rx="13" ry="17" fill="#b6dc78"/><ellipse cx="120" cy="100" rx="13" ry="17" fill="#b6dc78"/><ellipse cx="76" cy="100" rx="5" ry="13"/><ellipse cx="116" cy="100" rx="5" ry="13"/><path d="m89 124 7 5 7-5" fill="#e8aaa9"/><path d="M96 129v7m0 0-9 5m9-5 9 5" fill="none" stroke="#303533" stroke-width="3" stroke-linecap="round"/></svg>
-</span></div></div>
+</nav><main><section id="home"><div class="row"><div><small id="date"></small><h1 id="dayHeading">Сегодня</h1><span class="muted">Сима · дневник питания</span></div><div style="text-align:center"><button type="button" id="cat" class="cat" onclick="petSima()" aria-label="Погладить Симу"><svg class="cat-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="42" fill="#202820"/><path d="M45 92 40 40 78 65Q96 59 114 65L152 40 147 92Q168 149 96 153Q24 149 45 92Z" fill="#777b7a" stroke="#b2b6b0" stroke-width="5"/><ellipse class="sima-eye" cx="72" cy="100" rx="13" ry="17" fill="#b6dc78"/><ellipse class="sima-eye" cx="120" cy="100" rx="13" ry="17" fill="#b6dc78"/><ellipse class="sima-eye" cx="76" cy="100" rx="5" ry="13"/><ellipse class="sima-eye" cx="116" cy="100" rx="5" ry="13"/><path d="m89 124 7 5 7-5" fill="#e8aaa9"/><path d="M96 129v7m0 0-9 5m9-5 9 5" fill="none" stroke="#303533" stroke-width="3" stroke-linecap="round"/></svg>
+</button></div></div>
 <div class="day-navigation" aria-label="Выбор даты дневника">
  <button type="button" class="secondary day-arrow" onclick="shiftDiaryDay(-1)" aria-label="Предыдущий день">‹</button>
  <label class="day-picker-wrap" for="diaryDate"><span class="day-picker-title">▦ <span id="diaryDateLabel">Сегодня</span> <span aria-hidden="true">⌄</span></span><input id="diaryDate" type="date" onchange="chooseDiaryDay(this.value)" aria-label="Выбрать дату дневника"></label>
@@ -426,6 +449,12 @@ function simaNotice(message){
  const toast=$('simaNotice');if(!toast)return;
  toast.textContent=message;toast.classList.remove('hidden');toast.classList.add('visible');
  clearTimeout(simaNotice.timer);simaNotice.timer=setTimeout(()=>{toast.classList.remove('visible');toast.classList.add('hidden');},4500);
+}
+let simaPetCount=0;
+function petSima(){
+ const messages=['Мр-р! Сима рада вниманию 🐾','Мяу! Ещё немного — и она замурчит 💚','Сима довольно щурится. Хорошего дня! 🐈'];
+ simaReact(messages[simaPetCount%messages.length],true);
+ simaPetCount++;
 }
 function simaReact(message,celebrate=false){
  const label=$('simaMoodText'),bubble=$('simaMood'),cat=$('cat');if(!label||!cat)return;
